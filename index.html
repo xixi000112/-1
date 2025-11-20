@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>每日一签</title>
+    
+    <!-- 引入王羲之风格行书字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- 全局配置 --- */
+        :root {
+            --c-night: #1A1C2B;      
+            --c-crimson: #8A1C1C;    
+            --c-gold: #C9A86A;       
+            --c-paper: #F3F0E6;      
+            --c-wood: #3E2723;
+            
+            /* 字体配置 */
+            --font-title: 'Zhi Mang Xing', 'Ma Shan Zheng', "STXingkai", "华文行楷", cursive; /* 行书 */
+            --font-date: "STXingkai", "华文行楷", "Xingkai SC", "KaiTi", "楷体", serif; /* 行楷 */
+            --font-body: "KaiTi", "STKaiti", "楷体", "Songti SC", serif; /* 楷体 */
+            
+            --ease-out-back: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            background-color: var(--c-night);
+            overflow: hidden;
+            display: flex; flex-direction: column; align-items: center;
+            font-family: var(--font-body);
+            color: var(--c-gold);
+        }
+
+        /* 背景与纹理 */
+        .bg-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
+            background-image: radial-gradient(circle at 50% 30%, #2a2e45 0%, var(--c-night) 70%);
+        }
+        .bg-layer::after {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noise)" opacity="0.05"/%3E%3C/svg%3E');
+            opacity: 0.4; pointer-events: none;
+        }
+        canvas#particles { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+
+        /* --- 顶部日期 --- */
+        .header-paper {
+            position: relative; z-index: 10;
+            margin-top: 4vh; width: 85%; max-width: 380px;
+            background-color: var(--c-paper);
+            border: 1px solid var(--c-gold);
+            border-left: 4px solid var(--c-crimson);
+            border-right: 4px solid var(--c-crimson);
+            padding: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .header-paper::before, .header-paper::after {
+            content: ''; position: absolute; width: 100%; height: 3px; background: var(--c-gold); left: 0; opacity: 0.3;
+        }
+        .header-paper::before { top: 3px; } .header-paper::after { bottom: 3px; }
+
+        .date-gregorian {
+            font-family: var(--font-date); font-size: 1.3rem; color: #212121; margin-bottom: 6px;
+        }
+        .date-lunar {
+            font-family: var(--font-date); font-size: 1.1rem; color: #5d4037; 
+            border-top: 1px solid rgba(0,0,0,0.1); padding-top: 6px; display: block;
+        }
+
+        /* --- 签筒 --- */
+        .stage {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            position: relative; z-index: 5; perspective: 800px;
+        }
+        .cylinder-wrapper {
+            position: relative; width: 130px; height: 220px;
+            transform-style: preserve-3d; cursor: pointer;
+        }
+        .float-anim { animation: float 4s ease-in-out infinite; }
+        @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
+
+        .cylinder-body {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(90deg, #2D1E1B 0%, #5D4037 25%, #795548 50%, #4E342E 75%, #2D1E1B 100%);
+            border-radius: 0 0 12px 12px;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.9), 0 20px 40px rgba(0,0,0,0.4);
+            display: flex; justify-content: center; align-items: center;
+        }
+        .ring {
+            position: absolute; left: 0; width: 100%; height: 12px;
+            background: linear-gradient(90deg, #8d6e63 0%, var(--c-gold) 50%, #8d6e63 100%);
+        }
+        .ring.top { top: 25px; } .ring.bottom { bottom: 25px; }
+        
+        /* 【修改点1】 签筒刻字：只保留“签” */
+        .carving {
+            font-family: var(--font-title);
+            font-size: 4rem; /* 字号加大一点，撑起视觉 */
+            color: rgba(0,0,0,0.5);
+            text-shadow: 1px 1px 0 rgba(255,255,255,0.1); 
+            writing-mode: vertical-rl; 
+            pointer-events: none;
+            letter-spacing: 0;
+        }
+
+        .cylinder-top {
+            position: absolute; top: -15px; left: 0; width: 100%; height: 30px;
+            background: #3e2723; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stick {
+            position: absolute; left: 50%; top: 10px; width: 14px; height: 150px;
+            background: #D7CCC8; transform: translateX(-50%); z-index: -1;
+            border-radius: 2px; display: none;
+        }
+        .stick::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 25px; background: var(--c-crimson); }
+
+        /* --- 按钮 --- */
+        .btn-draw {
+            margin-bottom: 5vh; z-index: 20; position: relative;
+            background: linear-gradient(to bottom, #8A1C1C, #5a1212);
+            color: #F2DFA8; border: 1px solid var(--c-gold);
+            padding: 12px 60px; font-family: var(--font-title); font-size: 1.8rem;
+            cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 0 15px rgba(138, 28, 28, 0.6);
+        }
+        .btn-draw:active { transform: scale(0.95); }
+        .btn-draw:disabled { filter: grayscale(0.9); opacity: 0.7; transform: none; cursor: default; }
+
+        .status-msg {
+            height: 30px; margin-bottom: 2vh; color: var(--c-gold); 
+            font-size: 1rem; font-family: var(--font-body);
+            opacity: 0; transition: opacity 0.5s; text-shadow: 1px 1px 2px black;
+        }
+        .status-msg.visible { opacity: 1; }
+
+        /* --- 结果弹窗 --- */
+        .overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s;
+            backdrop-filter: blur(5px);
+        }
+        .paper-scroll {
+            width: 320px; min-height: 520px; background-color: var(--c-paper);
+            box-shadow: 0 0 50px rgba(201, 168, 106, 0.3);
+            display: flex; flex-direction: column; align-items: center; padding: 30px 20px;
+            transform: scaleY(0); transform-origin: top; transition: transform 0.6s var(--ease-out-back);
+            border-top: 8px solid var(--c-wood); border-bottom: 8px solid var(--c-wood);
+        }
+        .result-rank {
+            font-family: var(--font-title); font-size: 5rem; margin: 10px 0;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+        }
+        .result-poem {
+            font-family: var(--font-body); font-size: 1.3rem; line-height: 1.6;
+            color: #333; writing-mode: vertical-rl; height: 200px; margin: 10px 0;
+            border-right: 1px solid #ddd; padding-right: 20px;
+        }
+        
+        /* 【修改点2】 新增：底部随机祝福语样式 */
+        .result-blessing {
+            font-family: var(--font-title); /* 行书 */
+            font-size: 1.4rem;
+            color: var(--c-crimson);
+            margin-top: 15px;
+            opacity: 0;
+            text-align: center;
+        }
+
+        .close-hint {
+            margin-top: auto; color: #888; font-size: 0.9rem; cursor: pointer;
+            border: 1px solid #bbb; padding: 5px 20px; border-radius: 20px;
+        }
+
+        /* 动画 */
+        @keyframes shake { 0% { transform: rotate(0deg); } 25% { transform: rotate(5deg); } 75% { transform: rotate(-5deg); } 100% { transform: rotate(0deg); } }
+        @keyframes stickDrop { 0% { transform: translateX(-50%) translateY(0); opacity: 1; } 100% { transform: translateX(-50%) translateY(400px) rotate(20deg); opacity: 0; } }
+        @keyframes inkFadeIn { to { opacity: 1; } }
+
+        .shaking { animation: shake 0.3s ease-in-out infinite; }
+        .dropping { display: block; animation: stickDrop 0.8s forwards ease-in; }
+        .overlay-visible { opacity: 1; pointer-events: auto; }
+        .overlay-visible .paper-scroll { transform: scaleY(1); }
+        
+        /* 渐显动画序列 */
+        .reveal .result-blessing { animation: inkFadeIn 1s 1.2s forwards; } /* 祝福语最后出现 */
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-layer"></div>
+    <canvas id="particles"></canvas>
+
+    <div class="header-paper">
+        <div class="date-gregorian" id="dateG"></div>
+        <div class="date-lunar" id="dateL"></div>
+    </div>
+
+    <div class="stage">
+        <div class="cylinder-wrapper float-anim" id="cylinder">
+            <div class="stick" id="stick"></div>
+            <div class="cylinder-top"></div>
+            <div class="cylinder-body">
+                <div class="ring top"></div>
+                <!-- 刻字只保留“签” -->
+                <div class="carving">签</div>
+                <div class="ring bottom"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-msg" id="statusMsg">你今日已求过签，愿福气常伴。</div>
+
+    <button class="btn-draw" id="drawBtn">诚心求签</button>
+
+    <div class="overlay" id="resultOverlay">
+        <div class="paper-scroll">
+            <div class="result-rank" id="resRank"></div>
+            <div class="result-poem" id="resText"></div>
+            <!-- 新增：祝福语 -->
+            <div class="result-blessing" id="resBlessing"></div>
+            <div class="close-hint" onclick="closeOverlay()">[ 收起签文 ]</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const STORAGE_KEY_PREFIX = "fortune_v3_"; // key升级
+
+            // 签文库
+            const fortunes = [
+                { type: "大吉", text: "时来天地皆同力，\n运去英雄不自由。\n莫道前路无知己，\n天下谁人不识君。" },
+                { type: "吉",   text: "长风破浪会有时，\n直挂云帆济沧海。\n宝剑锋从磨砺出，\n梅花香自苦寒来。" },
+                { type: "中吉", text: "山重水复疑无路，\n柳暗花明又一村。\n本来无一物，\n何处惹尘埃。" },
+                { type: "小吉", text: "采菊东篱下，\n悠然见南山。\n粗茶淡饭饱即休，\n补破遮寒暖即尤。" },
+                { type: "平",   text: "行到水穷处，\n坐看云起时。\n非淡泊无以明志，\n非宁静无以致远。" }
+            ];
+
+            // 【新增】随机祝福语库
+            const blessings = [
+                "愿君岁岁常康健",
+                "所求皆如愿，所行皆坦途",
+                "愿君平安喜乐，万事胜意",
+                "福暖四季，顺遂安康",
+                "心有山海，静待花开",
+                "愿君多喜乐，长安宁",
+                "日有小暖，岁有小安"
+            ];
+
+            const ui = {
+                dateG: document.getElementById('dateG'),
+                dateL: document.getElementById('dateL'),
+                btn: document.getElementById('drawBtn'),
+                cyl: document.getElementById('cylinder'),
+                stick: document.getElementById('stick'),
+                overlay: document.getElementById('resultOverlay'),
+                rank: document.getElementById('resRank'),
+                text: document.getElementById('resText'),
+                blessing: document.getElementById('resBlessing'),
+                msg: document.getElementById('statusMsg'),
+                paper: document.querySelector('.paper-scroll')
+            };
+
+            let savedData = null;
+            let isRunning = false;
+
+            // --- 日期 ---
+            try {
+                const now = new Date();
+                const days = ['日','一','二','三','四','五','六'];
+                ui.dateG.innerText = `今日：${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 · 星期${days[now.getDay()]}`;
+                if (window.Intl && window.Intl.DateTimeFormat) {
+                    const lunar = new Intl.DateTimeFormat('zh-CN', { calendar: 'chinese', year: 'numeric', month: 'long', day: 'numeric' }).format(now);
+                    let lunarText = lunar.replace(/\d+年/, '').trim();
+                    if(!lunarText || lunarText === "Invalid Date") lunarText = "吉日良辰";
+                    ui.dateL.innerText = `农历：${lunarText}`;
+                } else { ui.dateL.innerText = "农历：吉日良辰"; }
+            } catch (e) { ui.dateG.innerText = "今日：吉日良辰"; }
+
+            // --- 每日限抽 ---
+            function getTodayKey() {
+                const d = new Date();
+                return `${STORAGE_KEY_PREFIX}${d.getFullYear()}_${d.getMonth()+1}_${d.getDate()}`;
+            }
+
+            try {
+                const record = localStorage.getItem(getTodayKey());
+                if (record) {
+                    savedData = JSON.parse(record);
+                    lockButtonState();
+                }
+            } catch (e) {}
+
+            function lockButtonState() {
+                ui.btn.innerText = "查看今日灵签";
+                ui.msg.classList.add('visible');
+                ui.btn.onclick = () => showOverlay(savedData, false); // false 代表不是新抽的
+            }
+
+            // --- 抽签逻辑 ---
+            ui.btn.onclick = () => {
+                if (savedData) showOverlay(savedData, false);
+                else startDraw();
+            };
+
+            function startDraw() {
+                if (isRunning) return;
+                isRunning = true;
+                ui.btn.disabled = true;
+                ui.btn.innerText = "祈愿中...";
+
+                ui.cyl.classList.remove('float-anim');
+                ui.cyl.classList.add('shaking');
+
+                setTimeout(() => {
+                    ui.cyl.classList.remove('shaking');
+                    ui.stick.style.display = 'block';
+                    ui.stick.classList.add('dropping');
+
+                    // 生成结果：随机签文 + 随机祝福
+                    const fortune = fortunes[Math.floor(Math.random() * fortunes.length)];
+                    const blessingText = blessings[Math.floor(Math.random() * blessings.length)];
+                    
+                    const result = { ...fortune, blessing: blessingText };
+                    
+                    try {
+                        localStorage.setItem(getTodayKey(), JSON.stringify(result));
+                        savedData = result;
+                    } catch (e) {}
+
+                    setTimeout(() => {
+                        showOverlay(result, true); // true 代表是新抽的，播放动画
+                        lockButtonState();
+                        
+                        ui.btn.disabled = false;
+                        isRunning = false;
+                        ui.cyl.classList.add('float-anim');
+                        ui.stick.style.display = 'none';
+                        ui.stick.classList.remove('dropping');
+                    }, 1000);
+
+                }, 1200);
+            }
+
+            // --- 弹窗 ---
+            window.showOverlay = (data, isNew) => {
+                ui.rank.innerText = data.type;
+                ui.rank.style.color = (data.type === '平') ? '#555' : '#8A1C1C';
+                ui.text.innerText = data.text;
+                ui.blessing.innerText = data.blessing || "愿君平安喜乐"; // 兼容旧数据
+                
+                ui.overlay.classList.add('overlay-visible');
+                
+                if(isNew) {
+                    ui.paper.classList.add('reveal'); // 播放渐显动画
+                } else {
+                    ui.paper.classList.remove('reveal'); // 旧签直接显示，不要动画
+                    ui.blessing.style.opacity = 1;
+                }
+            };
+
+            window.closeOverlay = () => {
+                ui.overlay.classList.remove('overlay-visible');
+                ui.paper.classList.remove('reveal');
+                ui.blessing.style.opacity = 0; // 重置透明度
+            };
+
+            // --- 粒子 ---
+            const cvs = document.getElementById('particles');
+            if(cvs) {
+                const ctx = cvs.getContext('2d');
+                let w, h;
+                const parts = [];
+                function resize() { w = cvs.width = window.innerWidth; h = cvs.height = window.innerHeight; }
+                window.addEventListener('resize', resize);
+                resize();
+                for(let i=0; i<30; i++) parts.push({
+                    x: Math.random()*w, y: Math.random()*h,
+                    vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5,
+                    size: Math.random()*2, alpha: Math.random()
+                });
+                function loop() {
+                    ctx.clearRect(0,0,w,h);
+                    ctx.fillStyle = '#C9A86A';
+                    parts.forEach(p => {
+                        p.x += p.vx; p.y += p.vy;
+                        if(p.x<0) p.x=w; if(p.x>w) p.x=0;
+                        if(p.y<0) p.y=h; if(p.y>h) p.y=0;
+                        ctx.globalAlpha = p.alpha;
+                        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+                    });
+                    requestAnimationFrame(loop);
+                }
+                loop();
+            }
+        });
+    </script>
+</body>
+</html>
