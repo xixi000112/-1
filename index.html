@@ -3,407 +3,510 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>每日一签</title>
+    <title>每日一签 | 问卜</title>
     
-    <!-- 引入王羲之风格行书字体 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;500;700&display=swap" rel="stylesheet">
 
     <style>
-        /* --- 全局配置 --- */
+        /* --- 1. 燕云十六声·淡彩水墨色系 --- */
         :root {
-            --c-night: #1A1C2B;      
-            --c-crimson: #8A1C1C;    
-            --c-gold: #C9A86A;       
-            --c-paper: #F3F0E6;      
-            --c-wood: #3E2723;
+            --bg-paper: #FDFBF5;     
+            --bg-sky: #E8F1F2;       
+            --c-wood: #D4C4A8;       
+            --c-wood-dark: #8A7660;  
+            --c-bamboo: #A4C2B4;     
+            --c-ink: #5E564F;        
+            --c-ink-light: #8C8680;  
             
-            /* 字体配置 */
-            --font-title: 'Zhi Mang Xing', 'Ma Shan Zheng', "STXingkai", "华文行楷", cursive; /* 行书 */
-            --font-date: "STXingkai", "华文行楷", "Xingkai SC", "KaiTi", "楷体", serif; /* 行楷 */
-            --font-body: "KaiTi", "STKaiti", "楷体", "Songti SC", serif; /* 楷体 */
+            --font-title: 'Ma Shan Zheng', cursive;
+            --font-body: 'Noto Serif SC', serif;
             
-            --ease-out-back: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --noise-url: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.4"/%3E%3C/svg%3E');
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             margin: 0; padding: 0; width: 100vw; height: 100vh;
-            background-color: var(--c-night);
-            overflow: hidden;
-            display: flex; flex-direction: column; align-items: center;
+            background: linear-gradient(180deg, var(--bg-sky) 0%, var(--bg-paper) 60%);
             font-family: var(--font-body);
-            color: var(--c-gold);
+            color: var(--c-ink);
+            overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative;
         }
 
-        /* 背景与纹理 */
-        .bg-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
-            background-image: radial-gradient(circle at 50% 30%, #2a2e45 0%, var(--c-night) 70%);
-        }
-        .bg-layer::after {
-            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noise)" opacity="0.05"/%3E%3C/svg%3E');
-            opacity: 0.4; pointer-events: none;
-        }
-        canvas#particles { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
-
-        /* --- 顶部日期 --- */
-        .header-paper {
-            position: relative; z-index: 10;
-            margin-top: 4vh; width: 85%; max-width: 380px;
-            background-color: var(--c-paper);
-            border: 1px solid var(--c-gold);
-            border-left: 4px solid var(--c-crimson);
-            border-right: 4px solid var(--c-crimson);
-            padding: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            text-align: center;
-        }
-        .header-paper::before, .header-paper::after {
-            content: ''; position: absolute; width: 100%; height: 3px; background: var(--c-gold); left: 0; opacity: 0.3;
-        }
-        .header-paper::before { top: 3px; } .header-paper::after { bottom: 3px; }
-
-        .date-gregorian {
-            font-family: var(--font-date); font-size: 1.3rem; color: #212121; margin-bottom: 6px;
-        }
-        .date-lunar {
-            font-family: var(--font-date); font-size: 1.1rem; color: #5d4037; 
-            border-top: 1px solid rgba(0,0,0,0.1); padding-top: 6px; display: block;
+        /* --- 2. 纹理与背景层 --- */
+        .texture-layer {
+            position: absolute; inset: 0; z-index: 100; pointer-events: none;
+            background-image: var(--noise-url);
+            opacity: 0.12; mix-blend-mode: multiply;
         }
 
-        /* --- 签筒 --- */
+        .layer-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+
+        .mist-mountain {
+            position: absolute; bottom: 0; width: 100%; height: 50%;
+            background: linear-gradient(to top, #DCE6E5 0%, transparent 80%);
+            mask-image: radial-gradient(ellipse at 50% 100%, black 50%, transparent 100%);
+            -webkit-mask-image: radial-gradient(ellipse at 50% 100%, black 50%, transparent 100%);
+            opacity: 0.6;
+        }
+
+        .pagoda {
+            position: absolute; right: 10%; top: 30%;
+            opacity: 0.4; filter: blur(1px); transform: scale(0.7);
+        }
+        .pagoda-roof {
+            width: 120px; height: 50px; background: #8FA8A8;
+            clip-path: polygon(50% 0%, 100% 80%, 90% 100%, 10% 100%, 0% 80%);
+            border-radius: 50% 50% 0 0;
+        }
+        .pagoda-body {
+            width: 60px; height: 60px; margin: 0 auto;
+            background: linear-gradient(to bottom, #8FA8A8, transparent);
+        }
+
+        .bamboo-shadows {
+            position: absolute; left: -20px; top: 10%; height: 90%; width: 200px;
+            animation: breeze 10s ease-in-out infinite alternate;
+        }
+        .b-leaf {
+            position: absolute; background: var(--c-bamboo);
+            border-radius: 0 80% 0 80%; opacity: 0.4; mix-blend-mode: multiply;
+        }
+        .l1 { width: 80px; height: 20px; top: 20%; left: -10px; transform: rotate(15deg); }
+        .l2 { width: 60px; height: 16px; top: 25%; left: 30px; transform: rotate(-10deg); }
+        .l3 { width: 90px; height: 24px; top: 50%; left: 10px; transform: rotate(5deg); }
+
+        /* --- 3. 顶部区域 --- */
+        .header-area {
+            position: absolute; top: 8vh; width: 100%;
+            display: flex; flex-direction: column; align-items: center; z-index: 10;
+        }
+        .plaque {
+            position: relative; width: 160px; height: 50px;
+            background: #F4EFE6;
+            border: 2px solid var(--c-wood-dark);
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 5px 10px rgba(94, 86, 79, 0.1);
+        }
+        .plaque::before, .plaque::after { 
+            content: ''; position: absolute; top: -100vh; bottom: 100%; width: 1px;
+            background: var(--c-ink); opacity: 0.3;
+        }
+        .plaque::before { left: 30px; } .plaque::after { right: 30px; }
+        
+        .plaque-text { font-family: var(--font-title); font-size: 1.6rem; color: var(--c-ink); opacity: 0.9; }
+        
+        .chime {
+            position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center;
+            animation: swing 4s ease-in-out infinite alternate; transform-origin: top center;
+        }
+        .chime-line { width: 1px; height: 15px; background: var(--c-ink-light); }
+        .chime-bell {
+            width: 20px; height: 18px; background: var(--c-ink-light);
+            border-radius: 50% 50% 0 0; opacity: 0.8;
+        }
+        .chime-paper {
+            width: 14px; height: 24px; background: #FFF;
+            border: 1px solid rgba(0,0,0,0.1); margin-top: 2px;
+            animation: flutter 3s infinite alternate;
+        }
+
+        /* --- 4. 舞台区域 --- */
         .stage {
-            flex: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            position: relative; z-index: 5; perspective: 800px;
+            position: relative; z-index: 20;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; transform: translateY(20px);
         }
+
         .cylinder-wrapper {
-            position: relative; width: 130px; height: 220px;
-            transform-style: preserve-3d; cursor: pointer;
+            position: relative; width: 100px; height: 160px;
+            cursor: pointer; transition: transform 0.2s;
         }
-        .float-anim { animation: float 4s ease-in-out infinite; }
-        @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
-
-        .cylinder-body {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(90deg, #2D1E1B 0%, #5D4037 25%, #795548 50%, #4E342E 75%, #2D1E1B 100%);
-            border-radius: 0 0 12px 12px;
-            box-shadow: inset 0 0 30px rgba(0,0,0,0.9), 0 20px 40px rgba(0,0,0,0.4);
-            display: flex; justify-content: center; align-items: center;
-        }
-        .ring {
-            position: absolute; left: 0; width: 100%; height: 12px;
-            background: linear-gradient(90deg, #8d6e63 0%, var(--c-gold) 50%, #8d6e63 100%);
-        }
-        .ring.top { top: 25px; } .ring.bottom { bottom: 25px; }
         
-        /* 【修改点1】 签筒刻字：只保留“签” */
-        .carving {
-            font-family: var(--font-title);
-            font-size: 4rem; /* 字号加大一点，撑起视觉 */
-            color: rgba(0,0,0,0.5);
-            text-shadow: 1px 1px 0 rgba(255,255,255,0.1); 
-            writing-mode: vertical-rl; 
-            pointer-events: none;
-            letter-spacing: 0;
+        .cylinder {
+            position: absolute; inset: 0; border-radius: 8px;
+            background: repeating-linear-gradient(90deg, #D4C4A8 0px, #E0D4BC 8px, #D4C4A8 16px);
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.05), 0 15px 30px rgba(94, 86, 79, 0.1);
+            display: flex; justify-content: center; align-items: flex-end; padding-bottom: 15px;
+        }
+        .cylinder::before, .cylinder::after {
+            content: ''; position: absolute; left: 0; width: 100%; height: 8px;
+            background: rgba(255,255,255,0.3);
+            border-top: 1px solid rgba(255,255,255,0.5);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .cylinder::before { top: 10px; } .cylinder::after { bottom: 10px; }
+
+        .cloud-mark {
+            width: 30px; height: 15px; opacity: 0.5;
+            background-image: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg" stroke="%238A7660" fill="none"%3E%3Cpath d="M10,40 Q20,20 40,40 T80,40" stroke-width="3" /%3E%3C/svg%3E');
+            background-repeat: no-repeat;
         }
 
-        .cylinder-top {
-            position: absolute; top: -15px; left: 0; width: 100%; height: 30px;
-            background: #3e2723; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
+        .stick-static-group { position: absolute; top: -12px; width: 50%; height: 30px; pointer-events: none; }
+        .stick-s {
+            position: absolute; bottom: 0; width: 6px; height: 40px;
+            background: #EBE0C8; border: 1px solid #C9B296; border-radius: 2px 2px 0 0;
         }
-        .stick {
-            position: absolute; left: 50%; top: 10px; width: 14px; height: 150px;
-            background: #D7CCC8; transform: translateX(-50%); z-index: -1;
-            border-radius: 2px; display: none;
-        }
-        .stick::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 25px; background: var(--c-crimson); }
+        .s1 { left: 10%; transform: rotate(-5deg); }
+        .s2 { left: 40%; height: 50px; transform: rotate(2deg); }
+        .s3 { left: 70%; transform: rotate(8deg); }
 
-        /* --- 按钮 --- */
+        .stick-active {
+            position: absolute; left: 50%; top: 0; width: 8px; height: 130px;
+            background: #EBE0C8; border: 1px solid #C9B296;
+            transform: translateX(-50%); z-index: -1; border-radius: 2px; display: none;
+        }
+
+        .btn-container { margin-top: 40px; text-align: center; }
+
         .btn-draw {
-            margin-bottom: 5vh; z-index: 20; position: relative;
-            background: linear-gradient(to bottom, #8A1C1C, #5a1212);
-            color: #F2DFA8; border: 1px solid var(--c-gold);
-            padding: 12px 60px; font-family: var(--font-title); font-size: 1.8rem;
-            cursor: pointer; transition: all 0.2s;
-            box-shadow: 0 0 15px rgba(138, 28, 28, 0.6);
+            background: #F9F7F2; border: 1px solid var(--c-wood);
+            color: var(--c-ink); font-family: var(--font-title); font-size: 1.3rem;
+            padding: 12px 40px; border-radius: 50px; cursor: pointer;
+            position: relative; overflow: hidden; transition: all 0.5s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            min-width: 180px;
         }
-        .btn-draw:active { transform: scale(0.95); }
-        .btn-draw:disabled { filter: grayscale(0.9); opacity: 0.7; transform: none; cursor: default; }
-
-        .status-msg {
-            height: 30px; margin-bottom: 2vh; color: var(--c-gold); 
-            font-size: 1rem; font-family: var(--font-body);
-            opacity: 0; transition: opacity 0.5s; text-shadow: 1px 1px 2px black;
+        .btn-draw::after {
+            content: ''; position: absolute; top: 50%; left: 50%; width: 0; height: 0;
+            background: radial-gradient(circle, rgba(94, 86, 79, 0.1) 0%, transparent 70%);
+            transform: translate(-50%, -50%); transition: width 0.6s ease, height 0.6s ease;
+            border-radius: 50%;
         }
-        .status-msg.visible { opacity: 1; }
+        .btn-draw:hover:not(:disabled)::after { width: 200px; height: 200px; }
+        .btn-draw:hover:not(:disabled) {
+            border-color: var(--c-ink); transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+        }
+        /* 禁用但可点击(用于回看) */
+        .btn-draw.is-disabled {
+            background: #F5F5F5; 
+            border-color: #E0E0E0; 
+            color: #999;
+            box-shadow: none; 
+            font-size: 1.1rem;
+            opacity: 0.9;
+            transform: none;
+        }
 
-        /* --- 结果弹窗 --- */
-        .overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100;
+        /* --- 6. 结果卡片美化 (4列对齐) --- */
+        .overlay-mask {
+            position: fixed; inset: 0; z-index: 90;
+            background: rgba(40, 38, 36, 0.75); backdrop-filter: blur(5px);
+            opacity: 0; pointer-events: none; transition: opacity 0.6s ease;
             display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.4s;
-            backdrop-filter: blur(5px);
         }
-        .paper-scroll {
-            width: 320px; min-height: 520px; background-color: var(--c-paper);
-            box-shadow: 0 0 50px rgba(201, 168, 106, 0.3);
-            display: flex; flex-direction: column; align-items: center; padding: 30px 20px;
-            transform: scaleY(0); transform-origin: top; transition: transform 0.6s var(--ease-out-back);
-            border-top: 8px solid var(--c-wood); border-bottom: 8px solid var(--c-wood);
-        }
-        .result-rank {
-            font-family: var(--font-title); font-size: 5rem; margin: 10px 0;
-            text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
-        }
-        .result-poem {
-            font-family: var(--font-body); font-size: 1.3rem; line-height: 1.6;
-            color: #333; writing-mode: vertical-rl; height: 200px; margin: 10px 0;
-            border-right: 1px solid #ddd; padding-right: 20px;
+
+        .result-card-large {
+            width: 300px; min-height: 480px;
+            background: #FDFBF5; border-radius: 4px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.25), inset 0 0 60px rgba(200,190,170, 0.2);
+            position: relative; display: flex; flex-direction: column; align-items: center;
+            padding: 40px 25px;
+            transform: scale(0.8) translateY(20px); opacity: 0;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         
-        /* 【修改点2】 新增：底部随机祝福语样式 */
-        .result-blessing {
-            font-family: var(--font-title); /* 行书 */
-            font-size: 1.4rem;
-            color: var(--c-crimson);
-            margin-top: 15px;
-            opacity: 0;
-            text-align: center;
+        .result-card-large::before {
+            content: ''; position: absolute; inset: 0; background-image: var(--noise-url);
+            opacity: 0.1; mix-blend-mode: multiply; pointer-events: none;
+        }
+
+        .card-deco-top {
+            width: 30px; height: 3px; background: var(--c-wood-dark);
+            margin-bottom: 25px; border-radius: 2px; opacity: 0.4;
+        }
+
+        .res-rank {
+            font-family: var(--font-title); font-size: 5rem;
+            margin-bottom: 30px; line-height: 1;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.05);
+        }
+
+        /* 核心：4列排版布局 */
+        .poem-container {
+            display: flex;
+            flex-direction: row-reverse; /* 右起阅读 */
+            justify-content: center; /* 居中 */
+            gap: 20px; /* 列间距 */
+            width: 100%;
+            margin-bottom: 30px;
+            border-top: 1px solid rgba(0,0,0,0.03); /* 淡淡的装饰线 */
+            border-bottom: 1px solid rgba(0,0,0,0.03);
+            padding: 20px 0;
+        }
+
+        .poem-column {
+            writing-mode: vertical-rl;
+            font-family: var(--font-body);
+            font-size: 1.25rem; /* 字号略大 */
+            color: #5E564F;
+            letter-spacing: 0.4em; /* 字间距 */
+            line-height: 1;
+            display: flex; align-items: center;
+            height: 140px; /* 固定高度，确保对齐 */
+        }
+        
+        .blessing-text {
+            font-family: var(--font-title);
+            font-size: 1.1rem; color: var(--c-wood-dark);
+            text-align: center; margin-top: auto;
+            width: 80%;
         }
 
         .close-hint {
-            margin-top: auto; color: #888; font-size: 0.9rem; cursor: pointer;
-            border: 1px solid #bbb; padding: 5px 20px; border-radius: 20px;
+            position: absolute; bottom: -45px;
+            color: rgba(255,255,255,0.7); font-size: 0.9rem;
+            letter-spacing: 1px; cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 5px 15px; border-radius: 20px;
         }
 
-        /* 动画 */
-        @keyframes shake { 0% { transform: rotate(0deg); } 25% { transform: rotate(5deg); } 75% { transform: rotate(-5deg); } 100% { transform: rotate(0deg); } }
-        @keyframes stickDrop { 0% { transform: translateX(-50%) translateY(0); opacity: 1; } 100% { transform: translateX(-50%) translateY(400px) rotate(20deg); opacity: 0; } }
-        @keyframes inkFadeIn { to { opacity: 1; } }
+        .footer {
+            position: absolute; bottom: 3vh; width: 100%;
+            text-align: center; font-size: 0.75rem; color: #B0AFA8;
+            letter-spacing: 1px;
+        }
 
-        .shaking { animation: shake 0.3s ease-in-out infinite; }
-        .dropping { display: block; animation: stickDrop 0.8s forwards ease-in; }
-        .overlay-visible { opacity: 1; pointer-events: auto; }
-        .overlay-visible .paper-scroll { transform: scaleY(1); }
-        
-        /* 渐显动画序列 */
-        .reveal .result-blessing { animation: inkFadeIn 1s 1.2s forwards; } /* 祝福语最后出现 */
+        /* --- 动画 --- */
+        @keyframes breeze { from { transform: rotate(0deg); } to { transform: rotate(2deg) translateX(5px); } }
+        @keyframes swing { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
+        @keyframes flutter { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
+        @keyframes shake { 0% { transform: rotate(0); } 25% { transform: rotate(3deg); } 75% { transform: rotate(-3deg); } 100% { transform: rotate(0); } }
+        @keyframes dropOut { 0% { transform: translateX(-50%) translateY(0); opacity: 1; } 100% { transform: translateX(-50%) translateY(300px) rotate(10deg); opacity: 0; } }
+
+        .anim-shake { animation: shake 0.3s ease-in-out infinite; }
+        .anim-drop { display: block; animation: dropOut 0.8s forwards ease-in; }
+        .overlay-active { opacity: 1; pointer-events: auto; }
+        .overlay-active .result-card-large { opacity: 1; transform: scale(1) translateY(0); }
 
     </style>
 </head>
 <body>
 
-    <div class="bg-layer"></div>
-    <canvas id="particles"></canvas>
+    <div class="texture-layer"></div>
 
-    <div class="header-paper">
-        <div class="date-gregorian" id="dateG"></div>
-        <div class="date-lunar" id="dateL"></div>
+    <div class="layer-bg">
+        <div class="mist-mountain"></div>
+        <div class="pagoda">
+            <div class="pagoda-roof"></div>
+            <div class="pagoda-body"></div>
+        </div>
+        <div class="bamboo-shadows">
+            <div class="b-leaf l1"></div>
+            <div class="b-leaf l2"></div>
+            <div class="b-leaf l3"></div>
+        </div>
     </div>
 
-    <div class="stage">
-        <div class="cylinder-wrapper float-anim" id="cylinder">
-            <div class="stick" id="stick"></div>
-            <div class="cylinder-top"></div>
-            <div class="cylinder-body">
-                <div class="ring top"></div>
-                <!-- 刻字只保留“签” -->
-                <div class="carving">签</div>
-                <div class="ring bottom"></div>
+    <div class="header-area">
+        <div class="plaque">
+            <div class="plaque-text">心诚则灵</div>
+            <div class="chime">
+                <div class="chime-line"></div>
+                <div class="chime-bell"></div>
+                <div class="chime-paper"></div>
             </div>
         </div>
     </div>
 
-    <div class="status-msg" id="statusMsg">你今日已求过签，愿福气常伴。</div>
-
-    <button class="btn-draw" id="drawBtn">诚心求签</button>
-
-    <div class="overlay" id="resultOverlay">
-        <div class="paper-scroll">
-            <div class="result-rank" id="resRank"></div>
-            <div class="result-poem" id="resText"></div>
-            <!-- 新增：祝福语 -->
-            <div class="result-blessing" id="resBlessing"></div>
-            <div class="close-hint" onclick="closeOverlay()">[ 收起签文 ]</div>
+    <div class="stage">
+        <div class="cylinder-wrapper" id="cylinderWrapper">
+            <div class="stick-static-group">
+                <div class="stick-s s1"></div>
+                <div class="stick-s s2"></div>
+                <div class="stick-s s3"></div>
+            </div>
+            <div class="stick-active" id="activeStick"></div>
+            <div class="cylinder">
+                <div class="cloud-mark"></div>
+            </div>
+        </div>
+        <div class="btn-container">
+            <button class="btn-draw" id="btnDraw">求签问卜</button>
         </div>
     </div>
 
+    <div class="overlay-mask" id="overlayMask">
+        <div class="result-card-large" id="resultCard">
+            <div class="card-deco-top"></div>
+            <div class="res-rank" id="resRank"></div>
+            <!-- 容器：放置4列诗句 -->
+            <div class="poem-container" id="poemContainer"></div>
+            <div class="blessing-text" id="blessingText"></div>
+            <div class="close-hint">点击任意处收起</div>
+        </div>
+    </div>
+
+    <div class="footer">愿你心怀善念，一切自有回应。</div>
+
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const STORAGE_KEY_PREFIX = "fortune_v3_"; // key升级
+        // --- 1. 签文数据 ---
+        const FORTUNES_DATA = {
+            "大吉": [
+                { text: "春光入户 百事向荣\n心安自暖 前程自来", bless: "愿你顺遂如愿" },
+                { text: "高风自远 吉星照路\n人和事顺 喜事渐临", bless: "愿你日日好运" },
+                { text: "潮平风正 前程可望\n心怀光亮 步步生花", bless: "愿你如愿以偿" },
+                { text: "山河有信 万物生辉\n平安相伴 好运自来", bless: "愿你喜乐常在" },
+                { text: "旭日东升 前路昭然\n贵人点醒 事皆成真", bless: "愿你万事胜意" },
+                { text: "好梦成真 运随心动\n明朗晴空 吉祥入怀", bless: "愿你心想事成" },
+                { text: "风和日丽 万象更新\n心有所向 花自盛开", bless: "愿你光芒万丈" },
+                { text: "四季明朗 机缘自生\n心境如水 好运常至", bless: "愿你平安丰收" }
+            ],
+            "中吉": [
+                { text: "云开见光 步履渐稳\n心中有数 事可成章", bless: "愿你稳步向前" },
+                { text: "清风作伴 山水相宜\n但行好事 前路自明", bless: "愿你心安无忧" },
+                { text: "初阳微照 万物将兴\n心怀笃定 日渐见好", bless: "愿你一切顺心" },
+                { text: "花落有期 新枝将生\n心若明亮 路亦从容", bless: "愿你不负当下" },
+                { text: "行稳致远 心静自清\n运随时转 喜意初生", bless: "愿你顺心如意" },
+                { text: "浅喜轻暖 步步渐丰\n和气自来 好运渐显", bless: "愿你平安顺遂" },
+                { text: "风微雨歇 新意自来\n心怀柔光 事呈祥意", bless: "愿你日日舒心" },
+                { text: "小成在望 力行不辍\n安稳可期 好运渐盛", bless: "愿你步步高升" }
+            ],
+            "小吉": [
+                { text: "风轻云缓 少忧少扰\n心定则稳 渐入佳境", bless: "愿你安心向前" },
+                { text: "细雨初歇 万事可期\n宁静以待 运势微升", bless: "愿你少烦少恼" },
+                { text: "枝头初绿 事有开端\n缓行亦稳 收获在前", bless: "愿你慢慢变好" },
+                { text: "日常可爱 小事可喜\n运气微暖 心中自明", bless: "愿你心轻如风" },
+                { text: "渐见端倪 喜意将生\n不争不急 顺势而为", bless: "愿你自在清欢" },
+                { text: "步伐轻缓 心怀温度\n虽有曲折 终归顺遂", bless: "愿你平平常常好" },
+                { text: "露润新芽 时来则至\n勤以补拙 运亦随心", bless: "愿你稳中向好" },
+                { text: "晨光微透 万象初动\n心怀期盼 未来可期", bless: "愿你笑口常开" }
+            ],
+            "平": [
+                { text: "风平无浪 心如常日\n少喜少忧 稳稳向前", bless: "愿你平安就好" },
+                { text: "云淡天清 事随心走\n当下如常 顺其自然", bless: "愿你日日安稳" },
+                { text: "无风无雨 平淡是真\n心若不乱 日子自甜", bless: "愿你安然无恙" },
+                { text: "时序如旧 点滴如常\n心轻事简 自得其乐", bless: "愿你舒心自在" },
+                { text: "凡事随缘 不急不缓\n平凡有味 日子生香", bless: "愿你顺其自然" },
+                { text: "云水悠悠 步履不惊\n平平常常 稳稳妥妥", bless: "愿你岁月静好" },
+                { text: "山月轻照 夜也无忧\n生活如常 心有所安", bless: "愿你温柔生活" },
+                { text: "一切如常 不多不少\n平淡之中 自有安宁", bless: "愿你简单快乐" }
+            ]
+        };
 
-            // 签文库
-            const fortunes = [
-                { type: "大吉", text: "时来天地皆同力，\n运去英雄不自由。\n莫道前路无知己，\n天下谁人不识君。" },
-                { type: "吉",   text: "长风破浪会有时，\n直挂云帆济沧海。\n宝剑锋从磨砺出，\n梅花香自苦寒来。" },
-                { type: "中吉", text: "山重水复疑无路，\n柳暗花明又一村。\n本来无一物，\n何处惹尘埃。" },
-                { type: "小吉", text: "采菊东篱下，\n悠然见南山。\n粗茶淡饭饱即休，\n补破遮寒暖即尤。" },
-                { type: "平",   text: "行到水穷处，\n坐看云起时。\n非淡泊无以明志，\n非宁静无以致远。" }
-            ];
+        // 重要：更换了Key以强制刷新您的抽签状态
+        const STORAGE_KEY = "daily_fortune_v6_1_reset";
 
-            // 【新增】随机祝福语库
-            const blessings = [
-                "愿君岁岁常康健",
-                "所求皆如愿，所行皆坦途",
-                "愿君平安喜乐，万事胜意",
-                "福暖四季，顺遂安康",
-                "心有山海，静待花开",
-                "愿君多喜乐，长安宁",
-                "日有小暖，岁有小安"
-            ];
+        const btn = document.getElementById('btnDraw');
+        const cylinder = document.querySelector('.cylinder');
+        const activeStick = document.getElementById('activeStick');
+        const overlay = document.getElementById('overlayMask');
+        const resRank = document.getElementById('resRank');
+        const poemContainer = document.getElementById('poemContainer');
+        const blessingText = document.getElementById('blessingText');
 
-            const ui = {
-                dateG: document.getElementById('dateG'),
-                dateL: document.getElementById('dateL'),
-                btn: document.getElementById('drawBtn'),
-                cyl: document.getElementById('cylinder'),
-                stick: document.getElementById('stick'),
-                overlay: document.getElementById('resultOverlay'),
-                rank: document.getElementById('resRank'),
-                text: document.getElementById('resText'),
-                blessing: document.getElementById('resBlessing'),
-                msg: document.getElementById('statusMsg'),
-                paper: document.querySelector('.paper-scroll')
-            };
+        let isAnimating = false;
+        let savedResult = null;
 
-            let savedData = null;
-            let isRunning = false;
+        function init() {
+            const today = new Date().toDateString();
+            const saved = localStorage.getItem(STORAGE_KEY);
 
-            // --- 日期 ---
-            try {
-                const now = new Date();
-                const days = ['日','一','二','三','四','五','六'];
-                ui.dateG.innerText = `今日：${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 · 星期${days[now.getDay()]}`;
-                if (window.Intl && window.Intl.DateTimeFormat) {
-                    const lunar = new Intl.DateTimeFormat('zh-CN', { calendar: 'chinese', year: 'numeric', month: 'long', day: 'numeric' }).format(now);
-                    let lunarText = lunar.replace(/\d+年/, '').trim();
-                    if(!lunarText || lunarText === "Invalid Date") lunarText = "吉日良辰";
-                    ui.dateL.innerText = `农历：${lunarText}`;
-                } else { ui.dateL.innerText = "农历：吉日良辰"; }
-            } catch (e) { ui.dateG.innerText = "今日：吉日良辰"; }
-
-            // --- 每日限抽 ---
-            function getTodayKey() {
-                const d = new Date();
-                return `${STORAGE_KEY_PREFIX}${d.getFullYear()}_${d.getMonth()+1}_${d.getDate()}`;
-            }
-
-            try {
-                const record = localStorage.getItem(getTodayKey());
-                if (record) {
-                    savedData = JSON.parse(record);
-                    lockButtonState();
+            if (saved) {
+                const data = JSON.parse(saved);
+                if (data.date === today) {
+                    savedResult = data.result;
+                    setDisabledState();
+                    // 允许点击回看
+                    btn.onclick = () => showCard(savedResult);
                 }
-            } catch (e) {}
-
-            function lockButtonState() {
-                ui.btn.innerText = "查看今日灵签";
-                ui.msg.classList.add('visible');
-                ui.btn.onclick = () => showOverlay(savedData, false); // false 代表不是新抽的
+            } else {
+                btn.onclick = startDraw;
             }
+        }
 
-            // --- 抽签逻辑 ---
-            ui.btn.onclick = () => {
-                if (savedData) showOverlay(savedData, false);
-                else startDraw();
-            };
+        function startDraw() {
+            if (isAnimating || btn.classList.contains('is-disabled')) return;
+            isAnimating = true;
 
-            function startDraw() {
-                if (isRunning) return;
-                isRunning = true;
-                ui.btn.disabled = true;
-                ui.btn.innerText = "祈愿中...";
+            cylinder.classList.add('anim-shake');
+            btn.innerText = "诚心祈愿...";
+            
+            const result = generateFortune();
+            savedResult = result;
+            
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                date: new Date().toDateString(),
+                result: result
+            }));
 
-                ui.cyl.classList.remove('float-anim');
-                ui.cyl.classList.add('shaking');
+            setTimeout(() => {
+                cylinder.classList.remove('anim-shake');
+                activeStick.classList.add('anim-drop');
 
                 setTimeout(() => {
-                    ui.cyl.classList.remove('shaking');
-                    ui.stick.style.display = 'block';
-                    ui.stick.classList.add('dropping');
+                    showCard(result);
+                    setDisabledState();
+                    isAnimating = false;
+                    setTimeout(() => { activeStick.classList.remove('anim-drop'); }, 500);
+                    btn.onclick = () => showCard(savedResult);
+                }, 600); 
+            }, 1200);
+        }
 
-                    // 生成结果：随机签文 + 随机祝福
-                    const fortune = fortunes[Math.floor(Math.random() * fortunes.length)];
-                    const blessingText = blessings[Math.floor(Math.random() * blessings.length)];
-                    
-                    const result = { ...fortune, blessing: blessingText };
-                    
-                    try {
-                        localStorage.setItem(getTodayKey(), JSON.stringify(result));
-                        savedData = result;
-                    } catch (e) {}
+        function setDisabledState() {
+            btn.classList.add('is-disabled');
+            btn.innerText = "今日已抽，明日再来";
+        }
 
-                    setTimeout(() => {
-                        showOverlay(result, true); // true 代表是新抽的，播放动画
-                        lockButtonState();
-                        
-                        ui.btn.disabled = false;
-                        isRunning = false;
-                        ui.cyl.classList.add('float-anim');
-                        ui.stick.style.display = 'none';
-                        ui.stick.classList.remove('dropping');
-                    }, 1000);
-
-                }, 1200);
+        function showCard(data) {
+            resRank.innerText = data.type;
+            blessingText.innerText = data.bless;
+            
+            // 颜色处理
+            if (data.type === '大吉' || data.type === '中吉') {
+                resRank.style.color = '#B64833';
+            } else if (data.type === '小吉') {
+                resRank.style.color = '#8A7660';
+            } else {
+                resRank.style.color = '#5E564F';
             }
 
-            // --- 弹窗 ---
-            window.showOverlay = (data, isNew) => {
-                ui.rank.innerText = data.type;
-                ui.rank.style.color = (data.type === '平') ? '#555' : '#8A1C1C';
-                ui.text.innerText = data.text;
-                ui.blessing.innerText = data.blessing || "愿君平安喜乐"; // 兼容旧数据
-                
-                ui.overlay.classList.add('overlay-visible');
-                
-                if(isNew) {
-                    ui.paper.classList.add('reveal'); // 播放渐显动画
-                } else {
-                    ui.paper.classList.remove('reveal'); // 旧签直接显示，不要动画
-                    ui.blessing.style.opacity = 1;
-                }
-            };
-
-            window.closeOverlay = () => {
-                ui.overlay.classList.remove('overlay-visible');
-                ui.paper.classList.remove('reveal');
-                ui.blessing.style.opacity = 0; // 重置透明度
-            };
-
-            // --- 粒子 ---
-            const cvs = document.getElementById('particles');
-            if(cvs) {
-                const ctx = cvs.getContext('2d');
-                let w, h;
-                const parts = [];
-                function resize() { w = cvs.width = window.innerWidth; h = cvs.height = window.innerHeight; }
-                window.addEventListener('resize', resize);
-                resize();
-                for(let i=0; i<30; i++) parts.push({
-                    x: Math.random()*w, y: Math.random()*h,
-                    vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5,
-                    size: Math.random()*2, alpha: Math.random()
-                });
-                function loop() {
-                    ctx.clearRect(0,0,w,h);
-                    ctx.fillStyle = '#C9A86A';
-                    parts.forEach(p => {
-                        p.x += p.vx; p.y += p.vy;
-                        if(p.x<0) p.x=w; if(p.x>w) p.x=0;
-                        if(p.y<0) p.y=h; if(p.y>h) p.y=0;
-                        ctx.globalAlpha = p.alpha;
-                        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
-                    });
-                    requestAnimationFrame(loop);
-                }
-                loop();
+            // === 核心逻辑：清洗并切割为4列 ===
+            poemContainer.innerHTML = '';
+            // 去除所有空格和换行符
+            const cleanText = data.text.replace(/[\s\n]/g, '');
+            
+            // 按4个字一组切割 (例如：春光入户、百事向荣、心安自暖、前程自来)
+            const chunks = [];
+            for (let i = 0; i < cleanText.length; i += 4) {
+                chunks.push(cleanText.slice(i, i + 4));
             }
+
+            // 渲染：因为容器是 flex-direction: row-reverse，
+            // 按照数组顺序添加即可：chunk[0] 会在最右边 (古风习惯)
+            chunks.forEach(chunk => {
+                const p = document.createElement('div');
+                p.className = 'poem-column';
+                p.innerText = chunk;
+                poemContainer.appendChild(p);
+            });
+
+            overlay.classList.add('overlay-active');
+        }
+
+        overlay.addEventListener('click', () => {
+            overlay.classList.remove('overlay-active');
         });
+
+        function generateFortune() {
+            const types = Object.keys(FORTUNES_DATA);
+            const type = types[Math.floor(Math.random() * types.length)];
+            const list = FORTUNES_DATA[type];
+            const item = list[Math.floor(Math.random() * list.length)];
+            return { type: type, text: item.text, bless: item.bless };
+        }
+
+        init();
+
     </script>
 </body>
 </html>
